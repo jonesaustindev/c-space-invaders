@@ -1,0 +1,33 @@
+# Object files
+*.o
+
+# Binary files / Executables
+my_project
+
+# macOS specific
+.DS_Store
+*.app
+
+# Linux specific
+.*.swp
+*~
+
+# Build directories
+build/
+bin/
+obj/
+
+# Dependency directories (if you're using any)
+deps/
+
+# Editor/IDE specific (VSCode, for example)
+.vscode/
+*.code-workspace
+
+# Other files and folders to ignore depending on your workflow
+# Documentation builds
+docs/_build/
+# Log files or temporary files
+*.log
+*.tmp
+
