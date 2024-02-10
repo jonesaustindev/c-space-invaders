@@ -31,3 +31,6 @@ docs/_build/
 *.log
 *.tmp
 
+# The outputfile
+./c_invaders
+
