@@ -1,26 +1,33 @@
 OS := $(shell uname -s)
 
 ifeq ($(OS),Darwin) # macOS
-    CFLAGS = -I/usr/local/include -Wall $(shell sdl2-config --cflags)
+    CFLAGS = -Iinclude -Wall $(shell sdl2-config --cflags) -MMD -MP
     LDFLAGS = $(shell sdl2-config --libs)
 else # Assuming Linux
-    CFLAGS = -Iinclude -Wall $(shell sdl2-config --cflags)
+    CFLAGS = -Iinclude -Wall $(shell sdl2-config --cflags) -MMD -MP
     LDFLAGS = $(shell sdl2-config --libs)
 endif
 
 CC = gcc
 SRC = $(wildcard src/*.c)
-OBJ = $(SRC:.c=.o)
+OBJDIR = obj
+DEP = $(OBJDIR)/*.d
+OBJ = $(patsubst src/%.c,$(OBJDIR)/%.o,$(SRC))
 TARGET = c_invaders
+
+# Ensure the object file directory exists
+$(shell mkdir -p $(OBJDIR))
 
 all: $(TARGET)
 
 $(TARGET): $(OBJ)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-%.o: %.c
+$(OBJDIR)/%.o: src/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
+-include $(DEP)
+
 clean:
-	rm -f $(OBJ) $(TARGET)
+	rm -f $(OBJDIR)/*.o $(OBJDIR)/*.d $(TARGET)
 

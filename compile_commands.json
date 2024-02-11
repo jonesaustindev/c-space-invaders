@@ -2,40 +2,17 @@
   {
     "arguments": [
       "/usr/bin/gcc",
-      "-c",
       "-Iinclude",
-      "-o",
-      "obj/file.o",
-      "src/file.c"
-    ],
-    "directory": "/home/austinjones/code/c-db-cli",
-    "file": "/home/austinjones/code/c-db-cli/src/file.c",
-    "output": "/home/austinjones/code/c-db-cli/obj/file.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/gcc",
+      "-Wall",
+      "-I/usr/include/SDL2",
+      "-D_REENTRANT",
       "-c",
-      "-Iinclude",
       "-o",
       "obj/main.o",
       "src/main.c"
     ],
-    "directory": "/home/austinjones/code/c-db-cli",
-    "file": "/home/austinjones/code/c-db-cli/src/main.c",
-    "output": "/home/austinjones/code/c-db-cli/obj/main.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/gcc",
-      "-c",
-      "-Iinclude",
-      "-o",
-      "obj/parse.o",
-      "src/parse.c"
-    ],
-    "directory": "/home/austinjones/code/c-db-cli",
-    "file": "/home/austinjones/code/c-db-cli/src/parse.c",
-    "output": "/home/austinjones/code/c-db-cli/obj/parse.o"
+    "directory": "/home/austinjones/code/c-space-invaders",
+    "file": "/home/austinjones/code/c-space-invaders/src/main.c",
+    "output": "/home/austinjones/code/c-space-invaders/obj/main.o"
   }
 ]
