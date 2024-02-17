@@ -31,3 +31,6 @@ $(OBJDIR)/%.o: src/%.c
 clean:
 	rm -f $(OBJDIR)/*.o $(OBJDIR)/*.d $(TARGET)
 
+run: $(TARGET)
+	./$(TARGET)
+
