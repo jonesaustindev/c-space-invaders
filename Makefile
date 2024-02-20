@@ -2,10 +2,10 @@ OS := $(shell uname -s)
 
 ifeq ($(OS),Darwin) # macOS
     CFLAGS = -Iinclude -Wall $(shell sdl2-config --cflags) -MMD -MP
-    LDFLAGS = $(shell sdl2-config --libs)
+    LDFLAGS = $(shell sdl2-config --libs) -lSDL2_image -lSDL2_ttf
 else # Assuming Linux
     CFLAGS = -Iinclude -Wall $(shell sdl2-config --cflags) -MMD -MP
-    LDFLAGS = $(shell sdl2-config --libs)
+    LDFLAGS = $(shell sdl2-config --libs) -lSDL2_image -lSDL2_ttf
 endif
 
 CC = gcc
