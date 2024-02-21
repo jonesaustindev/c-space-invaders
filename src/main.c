@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <time.h>
+#include <wchar.h>
 
 #include "defs.h"
 
@@ -23,7 +24,20 @@ typedef struct {
   int32_t y;
 } Vector2i;
 
-struct State {
+typedef enum { PEACH, PURPLE, BLUE, PINK } AlienTypeEnum;
+
+typedef struct {
+  Vector2i size;
+  Vector2i sprite_index;
+} AlienType;
+
+typedef struct {
+  Vector2f pos;
+  AlienType type;
+  int num;
+} Alien;
+
+typedef struct {
   SDL_Window *window;
   SDL_Renderer *renderer;
   SDL_Texture *texture;
@@ -45,7 +59,10 @@ struct State {
       bool down, pressed;
     } left, right, shoot;
   } input;
-};
+  Alien *aliens;
+  size_t alien_count;
+  AlienType alien_types[4];
+} State;
 
 const float SHIP_SPEED = 160.0f;
 const float NANOS_PER_SECOND = 1000000000.0;
@@ -54,6 +71,17 @@ const Vector2i RENDER_SIZE = {224, 256};
 
 // sprite indices
 const Vector2i SHIP_SPRITE_INDEX = {0, 0};
+const Vector2i ENEMY_1_SPRITE_INDEX = {1, 0};
+const Vector2i ENEMY_2_SPRITE_INDEX = {2, 0};
+const Vector2i ENEMY_3_SPRITE_INDEX = {3, 0};
+const Vector2i ENEMY_4_SPRITE_INDEX = {4, 0};
+
+Vector2f add_vectors(Vector2f v1, Vector2f v2) {
+  Vector2f result;
+  result.x = v1.x + v2.x;
+  result.y = v1.y + v2.y;
+  return result;
+}
 
 void draw_fps(SDL_Renderer *renderer, TTF_Font *font, int fps) {
   SDL_Color text_color = {255, 255, 255, 255};
@@ -89,7 +117,7 @@ void draw_fps(SDL_Renderer *renderer, TTF_Font *font, int fps) {
 
 void draw_background(SDL_Renderer *renderer, SDL_Texture *texture) {
   SDL_SetRenderTarget(renderer, texture);
-  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xFF);
+  SDL_SetRenderDrawColor(renderer, 20, 20, 20, 0xFF);
   SDL_RenderClear(renderer);
 
   // Reset to default render target
@@ -97,14 +125,61 @@ void draw_background(SDL_Renderer *renderer, SDL_Texture *texture) {
   SDL_RenderCopy(renderer, texture, NULL, NULL);
 }
 
-void draw_sprite(struct State *state, Vector2i index, Vector2f pos) {
+void draw_sprite(State *state, Vector2i index, Vector2f pos) {
   SDL_Rect src_rect = {index.x * SPRITE_SIZE, index.y * SPRITE_SIZE,
                        SPRITE_SIZE, SPRITE_SIZE};
   SDL_Rect dest_rect = {(int)pos.x, (int)pos.y, SPRITE_SIZE, SPRITE_SIZE};
   SDL_RenderCopy(state->renderer, state->sprites, &src_rect, &dest_rect);
 }
 
-void update(struct State *state) {
+void initialize_alien_types(State *state) {
+  state->alien_types[PEACH] =
+      (AlienType){.size = {16, 16}, .sprite_index = {1, 0}};
+  state->alien_types[PURPLE] =
+      (AlienType){.size = {16, 16}, .sprite_index = {2, 0}};
+  state->alien_types[BLUE] =
+      (AlienType){.size = {16, 16}, .sprite_index = {3, 0}};
+  state->alien_types[PINK] =
+      (AlienType){.size = {16, 16}, .sprite_index = {4, 0}};
+}
+
+void initialize_stage(State *state) {
+  int initial_y_count = 4;
+  int initial_x_count = 10;
+  size_t initial_size = initial_y_count * initial_x_count;
+  state->alien_count = 0;
+  state->aliens = malloc(initial_size * sizeof(Alien));
+  if (!state->aliens) {
+    printf("Failed to allocate memory for aliens\n");
+    exit(STATUS_ERROR);
+  }
+
+  int num_count = 0;
+  for (int y = 0; y < initial_y_count; y++) {
+    for (int x = 0; x < initial_x_count; x++) {
+      if (state->alien_count == initial_size) {
+        initial_size *= 2;
+        Alien *new_ptr = realloc(state->aliens, initial_size * sizeof(Alien));
+        if (!new_ptr) {
+          printf("Failed to reallocate memory for aliens\n");
+          free(state->aliens);
+          exit(STATUS_ERROR);
+        }
+        state->aliens = new_ptr;
+      }
+
+      Alien new_alien = {
+          .num = num_count,
+          .pos = add_vectors((Vector2f){10, 32}, (Vector2f){x * 18, y * 18}),
+          .type = state->alien_types[y % 4]};
+      state->aliens[state->alien_count++] = new_alien;
+
+      num_count += 1;
+    }
+  }
+}
+
+void update(State *state) {
   double delta_seconds = state->time.delta_ns / NANOS_PER_SECOND;
 
   if (state->input.left.down) {
@@ -116,7 +191,7 @@ void update(struct State *state) {
   }
 }
 
-void render(struct State *state) {
+void render(State *state) {
   // clear the renderer
   SDL_SetRenderDrawColor(state->renderer, 0, 0, 0, 0xFF);
   SDL_RenderClear(state->renderer);
@@ -124,6 +199,11 @@ void render(struct State *state) {
   // draw background, ship, and enemies
   draw_background(state->renderer, state->texture);
   draw_sprite(state, SHIP_SPRITE_INDEX, state->ship.pos);
+
+  for (int i = 0; i < state->alien_count; i++) {
+    draw_sprite(state, state->aliens[i].type.sprite_index,
+                state->aliens[i].pos);
+  }
 
   // overlays
   draw_fps(state->renderer, state->font, state->time.fps);
@@ -133,7 +213,7 @@ void render(struct State *state) {
 }
 
 int main(int argc, char *argv[]) {
-  struct State state;
+  State state;
 
   // initialize SDL
   if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -184,7 +264,7 @@ int main(int argc, char *argv[]) {
   }
 
   // setup font
-  state.font = TTF_OpenFont("assets/fonts/Micro5-Regular.ttf", 16);
+  state.font = TTF_OpenFont("assets/fonts/Micro5-Regular.ttf", 12);
   if (!state.font) {
     printf("Failed to load font: %s\n", TTF_GetError());
     return STATUS_ERROR;
@@ -222,10 +302,14 @@ int main(int argc, char *argv[]) {
   state.time.last_second = state.time.last_frame;
   state.time.frames = 0;
   state.time.fps = 0;
+
   // ship
   state.ship.pos.x = (float)RENDER_SIZE.x / 2;
   state.ship.pos.y = RENDER_SIZE.y - SPRITE_SIZE - 10;
   ;
+
+  initialize_alien_types(&state);
+  initialize_stage(&state);
 
   while (!quit) {
     uint64_t now = SDL_GetPerformanceCounter();
@@ -283,6 +367,7 @@ int main(int argc, char *argv[]) {
   }
 
   // clean up and exit
+  free(state.aliens);
   TTF_CloseFont(state.font);
   SDL_DestroyTexture(state.sprites);
   SDL_DestroyTexture(state.texture);
