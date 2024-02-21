@@ -6,6 +6,7 @@
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_video.h>
+#include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -53,6 +54,8 @@ typedef struct {
     int64_t last_second;
     int32_t frames;
     int32_t fps;
+    int64_t start;
+    int32_t now_seconds;
   } time;
   struct {
     struct {
@@ -65,16 +68,12 @@ typedef struct {
 } State;
 
 const float SHIP_SPEED = 160.0f;
-const float NANOS_PER_SECOND = 1000000000.0;
+const int64_t NANOS_PER_SECOND = 1000000000;
 const int SPRITE_SIZE = 16;
 const Vector2i RENDER_SIZE = {224, 256};
 
 // sprite indices
 const Vector2i SHIP_SPRITE_INDEX = {0, 0};
-const Vector2i ENEMY_1_SPRITE_INDEX = {1, 0};
-const Vector2i ENEMY_2_SPRITE_INDEX = {2, 0};
-const Vector2i ENEMY_3_SPRITE_INDEX = {3, 0};
-const Vector2i ENEMY_4_SPRITE_INDEX = {4, 0};
 
 Vector2f add_vectors(Vector2f v1, Vector2f v2) {
   Vector2f result;
@@ -188,6 +187,12 @@ void update(State *state) {
 
   if (state->input.right.down) {
     state->ship.pos.x += SHIP_SPEED * delta_seconds;
+  }
+
+  for (int i = 0; i < state->alien_count; i++) {
+    Alien *alien = &state->aliens[i];
+
+    alien->pos.x += sin(state->time.now_seconds + (alien->num * 0.15));
   }
 }
 
@@ -306,7 +311,6 @@ int main(int argc, char *argv[]) {
   // ship
   state.ship.pos.x = (float)RENDER_SIZE.x / 2;
   state.ship.pos.y = RENDER_SIZE.y - SPRITE_SIZE - 10;
-  ;
 
   initialize_alien_types(&state);
   initialize_stage(&state);
@@ -314,6 +318,13 @@ int main(int argc, char *argv[]) {
   while (!quit) {
     uint64_t now = SDL_GetPerformanceCounter();
     uint64_t frequency = SDL_GetPerformanceFrequency();
+
+    if (state.time.start == 0) {
+      state.time.start = now;
+    }
+
+    state.time.now_seconds =
+        (int32_t)((now - state.time.start) / NANOS_PER_SECOND);
 
     state.time.delta = now - state.time.last_frame;
     state.time.delta_ns =
